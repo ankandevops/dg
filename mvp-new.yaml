@@ -1,0 +1,84 @@
+digital-banking-gateway:
+  fullnameOverride: <+empty(<+stage.variables.canary>)?"dbg":"dbg-"+<+stage.variables.canary>>
+
+  networkPolicy:
+    ingress:
+      default:
+        config:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: ingress-nginx
+            podSelector:
+              matchLabels:
+                app.kubernetes.io/component: controller
+        ports:
+          - 80
+          - 443
+    egress: {}
+
+  image:
+    registry: binaryrepo.azure.nbscloud.co.uk/daidigital-a995daidigital-docker-dev
+    repository: digitalbankinggateway
+    tag: <+stage.variables.image_tag>
+
+  imagePullSecrets:
+    - name: artifactory-alt
+    - name: artifactory-sync
+
+  securityContext:
+    runAsUser: 1654
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+
+  envs:
+    API_BASE_URL: aks-mvp-dbg.mc-digital.dev.azure.nbscloud.co.uk
+
+  livenessProbe:
+    httpGet:
+      path: /health/alive
+      port: 8080
+
+  readinessProbe:
+    httpGet:
+      path: /health/alive
+      port: 8080
+
+  service:
+    port: 80
+    targetPort: 8080
+
+  autoscaling:
+    enabled: false
+
+  ingress:
+    enabled: false
+
+  ingressMultipleEnabled: true
+
+  ingressMultiple:
+    - name: dbg
+      className: internal-ingress
+      annotations:
+        nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+      tls:
+        - hosts:
+            - aks-mvp-dbg.mc-digital.dev.azure.nbscloud.co.uk
+          secretName: dbg
+      rules:
+        - host: aks-mvp-dbg.mc-digital.dev.azure.nbscloud.co.uk
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+              service:
+                name: dbg
+                port: 80
+
+  tolerations:
+    - key: "nodepooltype"
+      operator: "Equal"
+      value: "application"
+      effect: "NoSchedule"
