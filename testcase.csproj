@@ -1,0 +1,4 @@
+      dotnet-test-params: >
+        --settings coverage.runsettings
+        --logger "trx;LogFileName=test-results.trx"
+        --results-directory ./TestResults
