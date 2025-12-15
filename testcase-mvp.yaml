@@ -1,0 +1,85 @@
+digital-ba-auth-service:
+  fullnameOverride: "ba-auth"
+
+  image:
+    registry: binaryrepo.azure.nbscloud.co.uk/daidigital-a995daidigital-docker-dev
+    repository: nationwide.digitalbanking.baauthorchestration
+    tag: <+stage.variables.image_tag>
+    pullPolicy: Always
+
+  # Allow traffic only from pods in the same namespace
+   networkPolicy:
+    ingress:
+      default:
+        config:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: ingress-nginx
+        ports:
+          - 8080
+    egress: {}
+                
+  serviceAccount:
+    create: true
+    enableKubernetesVaultAuth: true
+
+  envs:
+    API_BASE_URL: baauthorchestration.mc-digital.dev.azure.nbscloud.co.uk
+
+  service:
+    port: 80
+    targetPort: 8080
+
+  ingressMultipleEnabled: true
+      
+  ingressMultiple: 
+  - name: dbg
+    className: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/backend-protocol: HTTP
+      nginx.ingress.kubernetes.io/enable-underscores-in-headers: "true"
+      nginx.ingress.kubernetes.io/hsts: "false"
+    tls:
+      - hosts:
+          - baauthorchestration.mc-digital.dev.azure.nbscloud.co.uk
+        secretName: dbg   
+    rules:
+      - host: baauthorchestration.mc-digital.dev.azure.nbscloud.co.uk
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+            service:
+              name: dbg
+              port: 80
+
+  ingress:
+    enabled: false
+
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+
+  securityContext:
+    runAsUser: 1654
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+    targetMemoryUtilizationPercentage: 80
+
+  livenessProbe: null
+    
+  readinessProbe: null
+    
+  tolerations:
+    - key: "nodepooltype"
+      operator: "Equal"
+      value: "application"
+      effect: "NoSchedule"
+
+ 
