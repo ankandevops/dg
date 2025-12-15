@@ -1,0 +1,46 @@
+digital-ba-auth-service:
+  fullnameOverride: "ba-auth"
+
+  image:
+    registry: binaryrepo.azure.nbscloud.co.uk/daidigital-a995daidigital-docker-dev
+    repository: nationwide.digitalbanking.baauthorchestration
+    tag: <+stage.variables.image_tag>
+    pullPolicy: Always
+
+  serviceAccount:
+    create: true
+    enableKubernetesVaultAuth: true
+
+  networkPolicy:
+    ingress:
+      default:
+        config:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: ingress-nginx
+        ports:
+          - 80
+          - 443
+    egress: {}
+
+  envs:
+    API_BASE_URL: baauthorchestration.mc-digital.dev.azure.nbscloud.co.uk.mc-digital.dev.azure.nbscloud.co.uk
+
+
+  service:
+    port: 80
+    targetPort: 8080
+
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      kubernetes.io/ingress.class: nginx
+
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 2
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+    
