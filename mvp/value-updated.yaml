@@ -1,0 +1,58 @@
+digital-ba-auth-service:
+  fullnameOverride: "ba-auth"
+
+  image:
+    registry: binaryrepo.azure.nbscloud.co.uk/daidigital-a995daidigital-docker-dev
+    repository: nationwide.digitalbanking.baauthorchestration
+    tag: <+stage.variables.image_tag>
+    pullPolicy: Always
+
+  serviceAccount:
+    create: true
+    name: banking-gateway-sa
+    enableKubernetesVaultAuth: true
+
+  # 🔐 Vault integration (ADDED)
+  podAnnotations:
+    vault.hashicorp.com/agent-inject: "true"
+    vault.hashicorp.com/role: "banking-gateway-role"
+
+    # Inject DUClientDEV-BA.pfx from Vault
+    vault.hashicorp.com/agent-inject-secret-client.pfx: "secrets/data/certs/ca"
+
+    vault.hashicorp.com/agent-inject-template-client.pfx: |
+      {{- with secret "secrets/data/certs/ca" -}}
+      {{ .Data.data.DUClientDEV-BA.pfx }}
+      {{- end }}
+
+  networkPolicy:
+    ingress:
+      default:
+        config:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: ingress-nginx
+        ports:
+          - 80
+          - 443
+    egress: {}
+
+  envs:
+    API_BASE_URL: baauthorchestration.mc-digital.dev.azure.nbscloud.co.uk.mc-digital.dev.azure.nbscloud.co.uk
+
+  service:
+    port: 80
+    targetPort: 8080
+
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      kubernetes.io/ingress.class: nginx
+
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 2
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
