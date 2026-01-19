@@ -1,0 +1,6 @@
+
+ 
+1. Generate and Secure the Keytab File: Done
+2. Configure the AKS Cluster Network and DNS: Add the egress and can reach to sql server. But need to check for the certificate 
+3. Prepare the Container Image: Need to install kurberos client and set krb5.conf, NBS Needs to install this.
+4. Deploy to AKS and Mount Resources: can be done only after 2 and 3, with Sam/Adam's hep we can do this.
