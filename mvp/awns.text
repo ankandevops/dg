@@ -1,0 +1,10 @@
+Yes, we can manually copy the keytab and create krb5.conf in the pod as a workaround to start testing — however that alone will not be sufficient to validate Kerberos / Integrated Authentication end-to-end.
+
+Reason:
+Kerberos authentication is not only configuration-based. Along with krb5.conf and the keytab, the container must also have the Kerberos/GSSAPI runtime libraries installed (e.g. libkrb5, gssapi libraries). These libraries are what the SQL client driver uses to actually perform Kerberos negotiation with the domain controller (KDC) and request tickets.
+
+So:
+
+✅ We can manually place krb5.conf and the keytab into the pod for quick testing
+
+❌ But if the container image does not include Kerberos runtime libraries, the SQL client will still fail during authentication (it cannot use the keytab or communicate with KDC properly)
