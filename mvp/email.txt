@@ -1,0 +1,14 @@
+Hi Team,
+
+We have already:
+
+Mounted the keytab into the AKS pod
+
+Added the required egress rule for the on-prem SQL Server domain
+
+As discussed, krb5.conf will be created/provided from your side.
+
+To complete MVP testing, we need your help with one pending item:
+🔸 Please update the application Dockerfile to install Kerberos client runtime libraries (Kerberos/GSSAPI).
+
+Without these libraries, even with keytab and krb5.conf in place, the pod cannot complete Kerberos authentication to SQL Server.
