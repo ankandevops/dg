@@ -6,3 +6,7 @@ kinit -V -kt /vault/secrets/svcwsauthlocksba.keytab svcWSAuthLocksBA@DEVADMIN.NB
 
 3) Verify ticket is issued
 klist
+
+kdestroy 2>/dev/null || true
+kinit -V -kt /vault/secrets/svcwsauthlocksba.keytab svcWSAuthLocksBA@DEVADMIN.NBSDEV.CO.UK
+klist
