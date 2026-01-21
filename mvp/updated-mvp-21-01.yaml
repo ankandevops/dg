@@ -1,0 +1,62 @@
+digital-authentication-locks-service:
+  fullnameOverride: "auth-locks"
+
+  image:
+    registry: binaryrepo.azure.nbscloud.co.uk/daidigital-a995daidigital-docker-dev
+    repository: nationwide.digitalbanking.authenticationlocks
+    tag: <+stage.variables.image_tag>
+    pullPolicy: Always
+
+  configMap:
+    data:
+      enable-underscores-in-headers: "true"
+
+  # Vault integration
+  podAnnotations:
+    vault.hashicorp.com/auth-path: auth/kmaas-mvp-backend
+    vault.hashicorp.com/namespace: azure/nbs-mc-digital-dev
+    vault.hashicorp.com/role: banking-gateway-role
+    vault.hashicorp.com/agent-inject: "true"
+
+    # ---------------------------
+    # Inject Keytab file
+    # ---------------------------
+    vault.hashicorp.com/agent-inject-secret-svcWSAuthLocksBA-keytab: secrets/data/keytabs/svcWSAuthLocksBA
+    vault.hashicorp.com/agent-inject-file-svcWSAuthLocksBA-keytab: svcWSAuthLocksBA.keytab
+    vault.hashicorp.com/agent-inject-template-svcWSAuthLocksBA-keytab: |
+      {{`{{- with secret "secrets/data/keytabs/svcWSAuthLocksBA" -}}`}}
+      {{`{{ .Data.data.svcWSAuthLocksBA | base64Decode }}`}}
+      {{`{{- end }}`}}
+
+    # ---------------------------
+    # Inject krb5.conf
+    # ---------------------------
+    vault.hashicorp.com/agent-inject-secret-krb5conf: secrets/data/keytabs/svcWSAuthLocksBA
+    vault.hashicorp.com/agent-inject-file-krb5conf: krb5.conf
+    vault.hashicorp.com/agent-inject-template-krb5conf: |
+      {{`{{- with secret "secrets/data/keytabs/svcWSAuthLocksBA" -}}`}}
+      {{`{{ index .Data.data "krb5.conf" }}`}}
+      {{`{{- end }}`}}
+
+  podSpec:
+    containers:
+      - name: digital-authentication-locks-service
+        env:
+          - name: DOTNET_SYSTEM_NET_HTTP_ENABLEUNDERSCORESINHEADERS
+            valueFrom:
+              configMapKeyRef:
+                name: auth-locks
+                key: enable-underscores-in-headers
+
+          # ---------------------------
+          # Kerberos required env vars
+          # ---------------------------
+          - name: KRB5_CONFIG
+            value: /vault/secrets/krb5.conf
+
+          - name: KRB5_CLIENT_KTNAME
+            value: /vault/secrets/svcWSAuthLocksBA.keytab
+
+          # Optional but recommended (ticket cache)
+          - name: KRB5CCNAME
+            value: /tmp/krb5cc
