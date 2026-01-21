@@ -7,6 +7,7 @@ digital-authentication-locks-service:
     tag: <+stage.variables.image_tag>
     pullPolicy: Always
 
+  # ConfigMap data here
   configMap:
     data:
       enable-underscores-in-headers: "true"
@@ -18,19 +19,19 @@ digital-authentication-locks-service:
     vault.hashicorp.com/role: banking-gateway-role
     vault.hashicorp.com/agent-inject: "true"
 
-    # ---------------------------
-    # Inject Keytab file
-    # ---------------------------
-    vault.hashicorp.com/agent-inject-secret-svcWSAuthLocksBA-keytab: secrets/data/keytabs/svcWSAuthLocksBA
-    vault.hashicorp.com/agent-inject-file-svcWSAuthLocksBA-keytab: svcWSAuthLocksBA.keytab
-    vault.hashicorp.com/agent-inject-template-svcWSAuthLocksBA-keytab: |
+    # -----------------------------
+    # Inject KEYTAB
+    # -----------------------------
+    vault.hashicorp.com/agent-inject-secret-svcwsauthlocksba-keytab: secrets/data/keytabs/svcWSAuthLocksBA
+    vault.hashicorp.com/agent-inject-file-svcwsauthlocksba-keytab: svcwsauthlocksba.keytab
+    vault.hashicorp.com/agent-inject-template-svcwsauthlocksba-keytab: |
       {{`{{- with secret "secrets/data/keytabs/svcWSAuthLocksBA" -}}`}}
       {{`{{ .Data.data.svcWSAuthLocksBA | base64Decode }}`}}
       {{`{{- end }}`}}
 
-    # ---------------------------
-    # Inject krb5.conf
-    # ---------------------------
+    # -----------------------------
+    # Inject KRB5.CONF
+    # -----------------------------
     vault.hashicorp.com/agent-inject-secret-krb5conf: secrets/data/keytabs/svcWSAuthLocksBA
     vault.hashicorp.com/agent-inject-file-krb5conf: krb5.conf
     vault.hashicorp.com/agent-inject-template-krb5conf: |
@@ -48,15 +49,117 @@ digital-authentication-locks-service:
                 name: auth-locks
                 key: enable-underscores-in-headers
 
-          # ---------------------------
-          # Kerberos required env vars
-          # ---------------------------
+          # -----------------------------
+          # Kerberos env vars (mandatory)
+          # -----------------------------
           - name: KRB5_CONFIG
             value: /vault/secrets/krb5.conf
 
           - name: KRB5_CLIENT_KTNAME
-            value: /vault/secrets/svcWSAuthLocksBA.keytab
+            value: /vault/secrets/svcwsauthlocksba.keytab
 
-          # Optional but recommended (ticket cache)
+          # Optional (recommended)
           - name: KRB5CCNAME
             value: /tmp/krb5cc
+
+  # Allow traffic only from ingress-nginx
+  networkPolicy:
+    ingress:
+      default:
+        config:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: ingress-nginx
+        ports:
+          - 8080
+      baauth:
+        config:
+          - podSelector:
+              matchLabels:
+                app.kubernetes.io/instance: dev-baauthorchestration
+                app.kubernetes.io/name: digital-ba-auth-service
+                application: digital-ba-auth-service
+        ports:
+          - 8080
+
+    egress:
+      kmaas-vault-url:
+        config:
+          - ipBlock:
+              cidr: 10.156.16.128/27
+        ports:
+          - 443
+
+      sql-db-url:
+        config:
+          - ipBlock:
+              cidr: 172.28.142.219/12
+        ports:
+          - 55551
+
+  # Service Account + Vault Auth
+  serviceAccount:
+    create: true
+    name: authentication-locks-sa
+    enableKubernetesVaultAuth: true
+
+  # Env vars (some Helm charts use only this section)
+  envs:
+    API_BASE_URL: authentication-locks.mc-digital.dev.azure.nbscloud.co.uk
+    KRB5_CONFIG: /vault/secrets/krb5.conf
+    KRB5_CLIENT_KTNAME: /vault/secrets/svcwsauthlocksba.keytab
+    KRB5CCNAME: /tmp/krb5cc
+
+  service:
+    port: 80
+    targetPort: 8080
+
+  ingressMultipleEnabled: true
+
+  ingressMultiple:
+    - name: auth-locks
+      className: nginx
+      annotations:
+        nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+        nginx.ingress.kubernetes.io/backend-protocol: HTTP
+        nginx.ingress.kubernetes.io/enable-underscores-in-headers: "true"
+        nginx.ingress.kubernetes.io/hsts: "false"
+      tls:
+        - hosts:
+            - authentication-locks.mc-digital.dev.azure.nbscloud.co.uk
+          secretName: auth-locks
+      rules:
+        - host: authentication-locks.mc-digital.dev.azure.nbscloud.co.uk
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+              service:
+                name: auth-locks
+                port: 80
+
+  ingress:
+    enabled: false
+
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 1
+    targetCPUUtilizationPercentage: 80
+
+  securityContext:
+    runAsUser: 1654
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+
+  livenessProbe: null
+  readinessProbe: null
+
+  tolerations:
+    - key: "nodepooltype"
+      operator: "Equal"
+      value: "application"
+      effect: "NoSchedule"
