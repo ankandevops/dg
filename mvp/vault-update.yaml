@@ -1,0 +1,29 @@
+podAnnotations:
+  vault.hashicorp.com/auth-path: auth/kmaas-mvp-backend
+  vault.hashicorp.com/namespace: azure/nbs-mc-digital-dev
+  vault.hashicorp.com/role: banking-gateway-role
+  vault.hashicorp.com/agent-inject: "true"
+
+  # ----------------------------------------------------
+  # Inject Keytab: secrets/data/keytabs/svcWSAuthLocksBA
+  # Key inside Vault secret: svcWSAuthLocksBA (base64)
+  # Output file: /vault/secrets/svcwsauthlocksba.keytab
+  # ----------------------------------------------------
+  vault.hashicorp.com/agent-inject-secret-keytab: secrets/data/keytabs/svcWSAuthLocksBA
+  vault.hashicorp.com/agent-inject-file-keytab: svcwsauthlocksba.keytab
+  vault.hashicorp.com/agent-inject-template-keytab: |
+    {{`{{- with secret "secrets/data/keytabs/svcWSAuthLocksBA" -}}`}}
+    {{`{{- .Data.data.svcWSAuthLocksBA | base64Decode -}}`}}
+    {{`{{- end -}}`}}
+
+  # ----------------------------------------------------
+  # Inject krb5.conf: secrets/data/keytabs/kerberos
+  # Key inside Vault secret: krb5.conf
+  # Output file: /vault/secrets/krb5.conf
+  # ----------------------------------------------------
+  vault.hashicorp.com/agent-inject-secret-krb5conf: secrets/data/keytabs/kerberos
+  vault.hashicorp.com/agent-inject-file-krb5conf: krb5.conf
+  vault.hashicorp.com/agent-inject-template-krb5conf: |
+    {{`{{- with secret "secrets/data/keytabs/kerberos" -}}`}}
+    {{`{{- index .Data.data "krb5.conf" -}}`}}
+    {{`{{- end -}}`}}
