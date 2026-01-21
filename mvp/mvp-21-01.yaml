@@ -44,6 +44,17 @@ digital-authentication-locks-service:
               configMapKeyRef:
                 name: auth-locks   # or whatever ConfigMap name your chart generates
                 key: enable-underscores-in-headers  
+
+          # Kerberos required env vars
+          - name: KRB5_CONFIG
+            value: /vault/secrets/krb5.conf
+
+          - name: KRB5_CLIENT_KTNAME
+            value: /vault/secrets/svcWSAuthLocksBA.keytab
+
+          # Optional but recommended (ticket cache)
+          - name: KRB5CCNAME
+            value: /tmp/krb5cc
          
   # Allow traffic only from ingress-nginx
   networkPolicy:
