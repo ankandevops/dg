@@ -1,0 +1,22 @@
+[libdefaults]
+  default_realm = DEVADMIN.NBSDEV.CO.UK
+  dns_lookup_realm = false
+  dns_canonicalize_hostname = false
+  dns_lookup_kdc = false
+  ticket_lifetime = 24h
+  renew_lifetime = 7d
+  forwardable = true
+  rdns = false   
+[logging]
+  default = FILE:/var/log/krb5kdc.log
+  admin_server = FILE:/var/log/kadmind.log
+  kdc = FILE:/var/log/krb5kdc.log
+  default = SYSLOG:debug:auth
+[realms]
+  DEVADMIN.NBSDEV.CO.UK = {
+  kdc = DEVADMINDC30.devadmin.nbsdev.co.uk
+  admin_server = DEVADMINDC30.devadmin.nbsdev.co.uk
+  }
+[domain_realm]
+  .devadmin.nbsdev.co.uk = DEVADMIN.NBSDEV.CO.UK
+  devadmin.nbsdev.co.uk = DEVADMIN.NBSDEV.CO.UK
