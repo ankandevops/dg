@@ -1,0 +1,15 @@
+digital-authentication-locks-service:
+  podSpec:
+    volumes:
+      - name: tmp
+        emptyDir: {}
+
+    containers:
+      - name: digital-authentication-locks-service
+        volumeMounts:
+          - name: tmp
+            mountPath: /tmp
+
+        env:
+          - name: KRB5CCNAME
+            value: FILE:/tmp/krb5cc_1654
