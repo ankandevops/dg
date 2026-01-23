@@ -1,0 +1,5 @@
+export KRB5CCNAME=FILE:/tmp/krb5cc_1654
+kdestroy 2>/dev/null || true
+kinit -V -kt /vault/secrets/svcwsauthlocksba.keytab svcWSAuthLocksBA@DEVADMIN.NBSDEV.CO.UK
+klist
+ls -l /tmp/krb5cc_1654
