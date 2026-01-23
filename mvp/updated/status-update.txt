@@ -1,0 +1,22 @@
+Hi Everyone/Venkatasubramanian Rajaraman/Jerish Stephen aloysius, 
+ 
+Last couple of days was roller costar for me. But we able to mange to make the Kerberos authentication last hour.
+ 
+With Sam’s help, we’ve now managed to get Kerberos authentication working successfully inside the AKS pod (keytab + krb5.conf validated and kinit authentication confirmed).
+ 
+Challenges we faced (summary):
+ 
+Initially we were using a Ubuntu-based image, however it did not contain the required Kerberos components/libraries. Sam shared the correct Debian base image from the Artifactory repo, which helped move things forward.
+We also discovered today that there is a separate/active AD domain/DC endpoint for Kerberos (cloud AD) which was not known earlier — this was required to make KDC reachability work from AKS.
+The Helm dependency chart version we were using had issues/limitations, so we switched to the updated version provided by Sam.
+We spent time troubleshooting because Kerberos was failing with credential cache permission errors, which turned out to be due to the container running with a read-only filesystem — it couldn’t write the Kerberos ticket cache under /tmp. Once updated, authentication started working.
+Current status:
+ 
+Kerberos authentication working in pod
+keytab + krb5.conf validated
+KDC connectivity confirmed
+ 
+Next step:
+ 
+We will test end-to-end SQL Server DB connection tomorrow and validate application-level connectivity.
+ 
